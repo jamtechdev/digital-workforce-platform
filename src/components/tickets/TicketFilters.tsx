@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { categories } from '@/data/mockData';
+import { categories } from '@/data/tickets.mock';
 
 interface TicketFiltersProps {
   searchQuery: string;
@@ -92,9 +92,9 @@ export function TicketFilters({
           </SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">All Companies</SelectItem>
-            <SelectItem value="comp-1">Acme Corp</SelectItem>
-            <SelectItem value="comp-2">TechStart Inc</SelectItem>
-            <SelectItem value="comp-3">Global Solutions</SelectItem>
+            <SelectItem value="1">Acme Corp</SelectItem>
+            <SelectItem value="2">TechStart Inc</SelectItem>
+            <SelectItem value="3">Global Solutions</SelectItem>
           </SelectContent>
         </Select>
       )}

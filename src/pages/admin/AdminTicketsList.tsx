@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { TicketFilters } from '@/components/tickets/TicketFilters';
 import { TicketTable } from '@/components/tickets/TicketTable';
-import { mockTickets } from '@/data/mockData';
+import { listTickets } from '@/services/support.service';
 
 export default function AdminTicketsList() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,11 +10,13 @@ export default function AdminTicketsList() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  const filteredTickets = mockTickets.filter((ticket) => {
+  const tickets = listTickets();
+
+  const filteredTickets = tickets.filter((ticket) => {
     const matchesSearch =
-      ticket.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.ticket_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.companyName.toLowerCase().includes(searchQuery.toLowerCase());
+      (ticket.company_name?.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     const matchesCategory = categoryFilter === 'all' || ticket.category === categoryFilter;

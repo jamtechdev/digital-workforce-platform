@@ -29,18 +29,18 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          
+
           {/* Client Routes */}
           <Route path="/support" element={<ClientLayout />}>
             <Route path="tickets" element={<ClientTicketsList />} />
-            <Route path="tickets/:id" element={<ClientTicketDetail />} />
+            <Route path="tickets/:eid" element={<ClientTicketDetail />} />
           </Route>
 
           {/* Admin Routes */}
           <Route path="/admin/support" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tickets" element={<AdminTicketsList />} />
-            <Route path="tickets/:id" element={<AdminTicketDetail />} />
+            <Route path="tickets/:eid" element={<AdminTicketDetail />} />
           </Route>
 
           {/* Catch-all */}

@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { TicketFilters } from '@/components/tickets/TicketFilters';
 import { TicketTable } from '@/components/tickets/TicketTable';
 import { CreateTicketModal } from '@/components/tickets/CreateTicketModal';
-import { mockTickets } from '@/data/mockData';
+import { listTickets, createTicket } from '@/services/support.service';
 import { Ticket } from '@/types/ticket';
 
 export default function ClientTicketsList() {
@@ -15,12 +15,13 @@ export default function ClientTicketsList() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  // Filter to only show client's company tickets (mock: comp-1)
-  const clientTickets = mockTickets.filter((t) => t.companyId === 'comp-1');
+  // Filter to only show client's company tickets (mock: company_id 1)
+  const tickets = listTickets();
+  const clientTickets = tickets.filter((t) => t.company_id === 1);
 
   const filteredTickets = clientTickets.filter((ticket) => {
     const matchesSearch =
-      ticket.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.ticket_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.subject.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
@@ -35,8 +36,17 @@ export default function ClientTicketsList() {
     priority: string;
     description: string;
   }) => {
-    console.log('Creating ticket:', data);
-    // In real app, this would call an API
+    createTicket({
+      ...data,
+      category: data.category as any,
+      priority: data.priority as any,
+      company_id: 1,
+      company_name: 'Acme Corp',
+      user_id: 101,
+      user_name: 'John Smith',
+      user_email: 'john@acme.com',
+    });
+    setIsModalOpen(false);
   };
 
   return (

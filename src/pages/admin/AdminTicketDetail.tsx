@@ -15,22 +15,29 @@ import { PriorityIndicator } from '@/components/tickets/PriorityIndicator';
 import { MessageBubble } from '@/components/tickets/MessageBubble';
 import { ReplyComposer } from '@/components/tickets/ReplyComposer';
 import { AISuggestionCard } from '@/components/tickets/AISuggestionCard';
-import { mockTickets, mockMessages, mockAdmins, categories } from '@/data/mockData';
+import {
+  getTicketByEid,
+  getMessages,
+  getAdmins,
+  updateTicket,
+  addMessage
+} from '@/services/support.service';
+import { categories } from '@/data/tickets.mock';
 import { TicketMessage, TicketStatus, TicketPriority } from '@/types/ticket';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminTicketDetail() {
-  const { id } = useParams();
+  const { eid } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const ticket = mockTickets.find((t) => t.id === id);
+
+  const ticket = getTicketByEid(eid || '');
   const [messages, setMessages] = useState<TicketMessage[]>(
-    mockMessages[id || ''] || []
+    ticket ? getMessages(ticket.id) : []
   );
   const [status, setStatus] = useState<TicketStatus>(ticket?.status || 'open');
   const [priority, setPriority] = useState<TicketPriority>(ticket?.priority || 'normal');
-  const [assignedAdmin, setAssignedAdmin] = useState(ticket?.assignedAdminId || '');
+  const [assignedAdmin, setAssignedAdmin] = useState<number | string>(ticket?.assigned_admin_id || '');
 
   const aiSuggestion = `Thank you for reaching out about this issue. I understand how frustrating this must be.
 
@@ -56,18 +63,19 @@ Please let me know if these steps resolve your issue, or if you need further ass
   const categoryLabel = categories.find((c) => c.value === ticket.category)?.label;
 
   const handleSendReply = (content: string, isInternal: boolean) => {
-    const newMessage: TicketMessage = {
-      id: `m${Date.now()}`,
-      ticketId: ticket.id,
-      content,
-      sender: 'admin',
-      senderName: 'Sarah Johnson',
-      isInternal,
+    if (!ticket) return;
+
+    const newMessage = addMessage(ticket.id, {
+      message_text: content,
+      sender_type: 'admin',
+      sender_id: 1, // Mock admin ID
+      sender_name: 'Sarah Johnson',
+      is_internal: isInternal,
       attachments: [],
-      createdAt: new Date().toISOString(),
-    };
+    });
+
     setMessages([...messages, newMessage]);
-    
+
     toast({
       title: isInternal ? 'Note added' : 'Reply sent',
       description: isInternal
@@ -77,28 +85,42 @@ Please let me know if these steps resolve your issue, or if you need further ass
   };
 
   const handleStatusChange = (newStatus: string) => {
-    setStatus(newStatus as TicketStatus);
-    toast({
-      title: 'Status updated',
-      description: `Ticket status changed to ${newStatus.replace('_', ' ')}.`,
-    });
+    if (!ticket) return;
+    const updated = updateTicket(ticket.id, { status: newStatus as TicketStatus });
+    if (updated) {
+      setStatus(updated.status);
+      toast({
+        title: 'Status updated',
+        description: `Ticket status changed to ${newStatus.replace('_', ' ')}.`,
+      });
+    }
   };
 
   const handlePriorityChange = (newPriority: string) => {
-    setPriority(newPriority as TicketPriority);
-    toast({
-      title: 'Priority updated',
-      description: `Ticket priority changed to ${newPriority}.`,
-    });
+    if (!ticket) return;
+    const updated = updateTicket(ticket.id, { priority: newPriority as TicketPriority });
+    if (updated) {
+      setPriority(updated.priority);
+      toast({
+        title: 'Priority updated',
+        description: `Ticket priority changed to ${newPriority}.`,
+      });
+    }
   };
 
   const handleAssignmentChange = (adminId: string) => {
-    setAssignedAdmin(adminId);
-    const admin = mockAdmins.find((a) => a.id === adminId);
-    toast({
-      title: 'Ticket reassigned',
-      description: `Ticket assigned to ${admin?.name || 'Unassigned'}.`,
-    });
+    if (!ticket) return;
+    const id = adminId === '' ? null : Number(adminId);
+    const updated = updateTicket(ticket.id, { assigned_admin_id: id });
+    if (updated) {
+      setAssignedAdmin(id || '');
+      const admins = getAdmins();
+      const admin = admins.find((a) => a.id === id);
+      toast({
+        title: 'Ticket reassigned',
+        description: `Ticket assigned to ${admin?.name || 'Unassigned'}.`,
+      });
+    }
   };
 
   return (
@@ -119,7 +141,7 @@ Please let me know if these steps resolve your issue, or if you need further ass
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-mono text-muted-foreground">
-                {ticket.ticketNumber}
+                {ticket.ticket_number}
               </span>
               <TicketStatusBadge status={status} />
               <PriorityIndicator priority={priority} />
@@ -213,14 +235,14 @@ Please let me know if these steps resolve your issue, or if you need further ass
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Assigned To
               </label>
-              <Select value={assignedAdmin || 'unassigned'} onValueChange={(value) => handleAssignmentChange(value === 'unassigned' ? '' : value)}>
+              <Select value={String(assignedAdmin || 'unassigned')} onValueChange={(value) => handleAssignmentChange(value === 'unassigned' ? '' : value)}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {mockAdmins.map((admin) => (
-                    <SelectItem key={admin.id} value={admin.id}>
+                  {getAdmins().map((admin) => (
+                    <SelectItem key={admin.id} value={String(admin.id)}>
                       {admin.name}
                     </SelectItem>
                   ))}
@@ -254,29 +276,23 @@ Please let me know if these steps resolve your issue, or if you need further ass
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-sm">{ticket.clientName}</p>
-                <p className="text-xs text-muted-foreground">{ticket.clientEmail}</p>
+                <p className="font-medium text-sm">{ticket.user_name}</p>
+                <p className="text-xs text-muted-foreground">{ticket.user_email}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 text-sm">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span>{ticket.companyName}</span>
+              <span>{ticket.company_name}</span>
             </div>
 
             <div className="pt-2 border-t text-xs text-muted-foreground space-y-1">
               <p>
-                Created: {format(new Date(ticket.createdAt), 'MMM d, yyyy h:mm a')}
+                Created: {format(new Date(ticket.created_at), 'MMM d, yyyy h:mm a')}
               </p>
               <p>
-                Updated: {format(new Date(ticket.updatedAt), 'MMM d, yyyy h:mm a')}
+                Updated: {format(new Date(ticket.updated_at || ticket.created_at), 'MMM d, yyyy h:mm a')}
               </p>
-              {ticket.firstResponseAt && (
-                <p>
-                  First Response:{' '}
-                  {format(new Date(ticket.firstResponseAt), 'MMM d, yyyy h:mm a')}
-                </p>
-              )}
             </div>
           </div>
         </div>

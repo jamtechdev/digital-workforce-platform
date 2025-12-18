@@ -1,14 +1,11 @@
 import { storage } from '@/utils/storage';
-import { Ticket, TicketMessage, TicketStats, Admin } from '@/types/ticket';
-import { 
-  mockTickets, 
-  mockMessages, 
-  mockStats, 
-  mockAdmins 
-} from '@/data/mockData';
+import { Ticket, TicketMessage, TicketStats, Admin, User } from '@/types/ticket';
+import { mockTickets } from '@/data/tickets.mock';
+import { mockMessages } from '@/data/messages.mock';
+import { mockUsers, mockAdmins } from '@/data/users.mock';
 
-const TICKETS_KEY = 'support_tickets';
-const MESSAGES_KEY = 'support_ticket_messages';
+const TICKETS_KEY = 'support_tickets_v2';
+const MESSAGES_KEY = 'support_ticket_messages_v2';
 
 /* Initialize mock data once */
 export function initMockData(): void {
@@ -21,17 +18,22 @@ export function initMockData(): void {
 }
 
 /* TICKETS */
-export function listAllTickets(): Ticket[] {
+export function listTickets(): Ticket[] {
   return storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
 }
 
-export function listTicketsByCompany(companyId: string): Ticket[] {
-  const tickets = storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
-  return tickets.filter((t) => t.companyId === companyId);
+export function listTicketsByCompany(company_id: number): Ticket[] {
+  const tickets = listTickets();
+  return tickets.filter((t) => t.company_id === company_id);
 }
 
-export function getTicketById(id: string): Ticket | undefined {
-  const tickets = storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
+export function getTicketByEid(eid: string): Ticket | undefined {
+  const tickets = listTickets();
+  return tickets.find((t) => t.eid === eid);
+}
+
+export function getTicketById(id: number): Ticket | undefined {
+  const tickets = listTickets();
   return tickets.find((t) => t.id === id);
 }
 
@@ -40,32 +42,37 @@ export function createTicket(payload: {
   description: string;
   category: Ticket['category'];
   priority: Ticket['priority'];
-  companyId: string;
-  companyName: string;
-  clientId: string;
-  clientName: string;
-  clientEmail: string;
+  company_id: number;
+  company_name: string;
+  user_id: number;
+  user_name: string;
+  user_email: string;
 }): Ticket {
-  const tickets = storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
-  
+  const tickets = listTickets();
+
+  const id = Date.now();
+  const eid = `TKT-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
   const newTicket: Ticket = {
-    id: String(Date.now()),
-    ticketNumber: `TKT-${String(tickets.length + 1).padStart(3, '0')}`,
+    id,
+    eid,
+    created_at: id,
+    updated_at: id,
+    ticket_number: `TKT-2024-${String(tickets.length + 1).padStart(3, '0')}`,
     subject: payload.subject,
     description: payload.description,
     status: 'open',
     priority: payload.priority,
     category: payload.category,
-    companyId: payload.companyId,
-    companyName: payload.companyName,
-    clientId: payload.clientId,
-    clientName: payload.clientName,
-    clientEmail: payload.clientEmail,
+    company_id: payload.company_id,
+    company_name: payload.company_name,
+    user_id: payload.user_id,
+    user_name: payload.user_name,
+    user_email: payload.user_email,
+    assigned_admin_id: null,
     tags: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    slaBreached: false,
-    unreadCount: 0,
+    unread_messages_count: 0,
+    sla_breach: false,
   };
 
   tickets.push(newTicket);
@@ -75,18 +82,18 @@ export function createTicket(payload: {
 }
 
 export function updateTicket(
-  id: string, 
-  updates: Partial<Pick<Ticket, 'status' | 'priority' | 'assignedAdminId' | 'assignedAdminName' | 'tags'>>
+  id: number,
+  updates: Partial<Pick<Ticket, 'status' | 'priority' | 'assigned_admin_id' | 'tags'>>
 ): Ticket | undefined {
-  const tickets = storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
+  const tickets = listTickets();
   const index = tickets.findIndex((t) => t.id === id);
-  
+
   if (index === -1) return undefined;
 
   tickets[index] = {
     ...tickets[index],
     ...updates,
-    updatedAt: new Date().toISOString(),
+    updated_at: Date.now(),
   };
 
   storage.set(TICKETS_KEY, tickets);
@@ -94,48 +101,51 @@ export function updateTicket(
 }
 
 /* MESSAGES */
-export function getMessages(ticketId: string): TicketMessage[] {
-  const allMessages = storage.get<Record<string, TicketMessage[]>>(MESSAGES_KEY, mockMessages);
-  return allMessages[ticketId] || [];
+export function getMessages(ticket_id: number): TicketMessage[] {
+  const allMessages = storage.get<TicketMessage[]>(MESSAGES_KEY, mockMessages);
+  return allMessages.filter((m) => m.ticket_id === ticket_id);
 }
 
 export function addMessage(
-  ticketId: string, 
+  ticket_id: number,
   payload: {
-    content: string;
-    sender: TicketMessage['sender'];
-    senderName: string;
-    isInternal: boolean;
+    message_text: string;
+    sender_type: TicketMessage['sender_type'];
+    sender_id: number;
+    sender_name: string;
+    is_internal: boolean;
     attachments?: TicketMessage['attachments'];
   }
 ): TicketMessage {
-  const allMessages = storage.get<Record<string, TicketMessage[]>>(MESSAGES_KEY, mockMessages);
-  
+  const allMessages = storage.get<TicketMessage[]>(MESSAGES_KEY, mockMessages);
+
   const newMessage: TicketMessage = {
-    id: `m${Date.now()}`,
-    ticketId,
-    content: payload.content,
-    sender: payload.sender,
-    senderName: payload.senderName,
-    isInternal: payload.isInternal,
+    id: Date.now(),
+    ticket_id,
+    created_at: Date.now(),
+    message_text: payload.message_text,
+    sender_type: payload.sender_type,
+    sender_id: payload.sender_id,
+    sender_name: payload.sender_name,
+    is_internal: payload.is_internal,
     attachments: payload.attachments || [],
-    createdAt: new Date().toISOString(),
   };
 
-  if (!allMessages[ticketId]) {
-    allMessages[ticketId] = [];
-  }
-  allMessages[ticketId].push(newMessage);
-  
+  allMessages.push(newMessage);
   storage.set(MESSAGES_KEY, allMessages);
 
   // Update ticket's unread count and timestamp
-  const tickets = storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
-  const ticketIndex = tickets.findIndex((t) => t.id === ticketId);
+  const tickets = listTickets();
+  const ticketIndex = tickets.findIndex((t) => t.id === ticket_id);
   if (ticketIndex !== -1) {
-    tickets[ticketIndex].updatedAt = new Date().toISOString();
-    if (!payload.isInternal) {
-      tickets[ticketIndex].unreadCount += 1;
+    tickets[ticketIndex].updated_at = Date.now();
+    if (!payload.is_internal && payload.sender_type === 'admin') {
+      // In a real system, unread count might be per user.
+      // Here we'll just increment it if an admin sends a message? 
+      // Actually, usually unread_messages_count is for the agent to see client messages.
+    }
+    if (payload.sender_type === 'client') {
+      tickets[ticketIndex].unread_messages_count += 1;
     }
     storage.set(TICKETS_KEY, tickets);
   }
@@ -145,20 +155,20 @@ export function addMessage(
 
 /* STATS */
 export function getStats(): TicketStats {
-  const tickets = storage.get<Ticket[]>(TICKETS_KEY, mockTickets);
-  
+  const tickets = listTickets();
+
   return {
-    openTickets: tickets.filter((t) => t.status === 'open').length,
-    urgentTickets: tickets.filter((t) => t.priority === 'urgent').length,
-    waitingResponse: tickets.filter((t) => t.status === 'waiting_response').length,
-    avgFirstResponseTime: mockStats.avgFirstResponseTime,
-    resolvedToday: tickets.filter((t) => {
-      if (!t.resolvedAt) return false;
-      const resolved = new Date(t.resolvedAt);
+    open_tickets: tickets.filter((t) => t.status === 'open').length,
+    urgent_tickets: tickets.filter((t) => t.priority === 'urgent').length,
+    waiting_response: tickets.filter((t) => t.status === 'waiting_response').length,
+    avg_first_response_time: '1h 24m', // Mocked for now
+    resolved_today: tickets.filter((t) => {
+      if (t.status !== 'resolved') return false;
+      const updated = new Date(t.updated_at || 0);
       const today = new Date();
-      return resolved.toDateString() === today.toDateString();
+      return updated.toDateString() === today.toDateString();
     }).length,
-    slaBreached: tickets.filter((t) => t.slaBreached).length,
+    sla_breached_count: tickets.filter((t) => t.sla_breach).length,
   };
 }
 
@@ -167,6 +177,15 @@ export function getAdmins(): Admin[] {
   return mockAdmins;
 }
 
-export function getAdminById(id: string): Admin | undefined {
+export function getAdminById(id: number): Admin | undefined {
   return mockAdmins.find((a) => a.id === id);
+}
+
+/* USERS */
+export function getUsers(): User[] {
+  return mockUsers;
+}
+
+export function getUserById(id: number): User | undefined {
+  return mockUsers.find((u) => u.id === id);
 }

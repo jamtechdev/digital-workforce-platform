@@ -9,16 +9,16 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isClient = false }: MessageBubbleProps) {
-  const isOwnMessage = isClient ? message.sender === 'client' : message.sender === 'admin';
-  const isAI = message.sender === 'ai';
-  const isSystem = message.sender === 'system';
-  const isInternal = message.isInternal;
+  const isOwnMessage = isClient ? message.sender_type === 'client' : message.sender_type === 'admin';
+  const isAI = message.sender_type === 'ai';
+  const isSystem = message.sender_type === 'system';
+  const isInternal = message.is_internal;
 
   if (isSystem) {
     return (
       <div className="flex justify-center py-2">
         <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-          {message.content}
+          {message.message_text}
         </span>
       </div>
     );
@@ -35,9 +35,9 @@ export function MessageBubble({ message, isClient = false }: MessageBubbleProps)
       <div
         className={cn(
           'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-          isAI ? 'bg-info/10 text-info' : 
-          message.sender === 'client' ? 'bg-primary/10 text-primary' : 
-          'bg-muted text-muted-foreground'
+          isAI ? 'bg-info/10 text-info' :
+            message.sender_type === 'client' ? 'bg-primary/10 text-primary' :
+              'bg-muted text-muted-foreground'
         )}
       >
         {isAI ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
@@ -47,7 +47,7 @@ export function MessageBubble({ message, isClient = false }: MessageBubbleProps)
       <div className={cn('flex flex-col max-w-[70%]', isOwnMessage ? 'items-end' : 'items-start')}>
         {/* Header */}
         <div className={cn('flex items-center gap-2 mb-1', isOwnMessage && 'flex-row-reverse')}>
-          <span className="text-sm font-medium">{message.senderName}</span>
+          <span className="text-sm font-medium">{message.sender_name}</span>
           {isAI && (
             <span className="text-[10px] font-medium bg-info/10 text-info px-1.5 py-0.5 rounded">
               AI Generated
@@ -68,13 +68,13 @@ export function MessageBubble({ message, isClient = false }: MessageBubbleProps)
             isOwnMessage
               ? 'bg-primary text-primary-foreground rounded-tr-sm'
               : isAI
-              ? 'bg-info/10 text-foreground border border-info/20 rounded-tl-sm'
-              : isInternal
-              ? 'bg-warning/10 text-foreground border border-warning/20 border-dashed rounded-tl-sm'
-              : 'bg-muted text-foreground rounded-tl-sm'
+                ? 'bg-info/10 text-foreground border border-info/20 rounded-tl-sm'
+                : isInternal
+                  ? 'bg-warning/10 text-foreground border border-warning/20 border-dashed rounded-tl-sm'
+                  : 'bg-muted text-foreground rounded-tl-sm'
           )}
         >
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap">{message.message_text}</p>
         </div>
 
         {/* Attachments */}
@@ -95,7 +95,7 @@ export function MessageBubble({ message, isClient = false }: MessageBubbleProps)
 
         {/* Timestamp */}
         <span className="text-[10px] text-muted-foreground mt-1">
-          {format(new Date(message.createdAt), 'MMM d, h:mm a')}
+          {format(new Date(message.created_at), 'MMM d, h:mm a')}
         </span>
       </div>
     </div>

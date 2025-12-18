@@ -6,17 +6,22 @@ import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge';
 import { PriorityIndicator } from '@/components/tickets/PriorityIndicator';
 import { MessageBubble } from '@/components/tickets/MessageBubble';
 import { ReplyComposer } from '@/components/tickets/ReplyComposer';
-import { mockTickets, mockMessages, categories } from '@/data/mockData';
-import { TicketMessage, MessageSender } from '@/types/ticket';
+import {
+  getTicketByEid,
+  getMessages,
+  addMessage
+} from '@/services/support.service';
+import { categories } from '@/data/tickets.mock';
+import { TicketMessage } from '@/types/ticket';
 import { useState } from 'react';
 
 export default function ClientTicketDetail() {
-  const { id } = useParams();
+  const { eid } = useParams();
   const navigate = useNavigate();
-  
-  const ticket = mockTickets.find((t) => t.id === id);
+
+  const ticket = getTicketByEid(eid || '');
   const [messages, setMessages] = useState<TicketMessage[]>(
-    mockMessages[id || ''] || []
+    ticket ? getMessages(ticket.id) : []
   );
 
   if (!ticket) {
@@ -33,19 +38,20 @@ export default function ClientTicketDetail() {
   const categoryLabel = categories.find((c) => c.value === ticket.category)?.label;
 
   // Filter out internal notes for client view
-  const visibleMessages = messages.filter((m) => !m.isInternal);
+  const visibleMessages = messages.filter((m) => !m.is_internal);
 
   const handleSendReply = (content: string) => {
-    const newMessage: TicketMessage = {
-      id: `m${Date.now()}`,
-      ticketId: ticket.id,
-      content,
-      sender: 'client',
-      senderName: ticket.clientName,
-      isInternal: false,
+    if (!ticket) return;
+
+    const newMessage = addMessage(ticket.id, {
+      message_text: content,
+      sender_type: 'client',
+      sender_id: 101, // Mock client ID
+      sender_name: ticket.user_name || 'Client',
+      is_internal: false,
       attachments: [],
-      createdAt: new Date().toISOString(),
-    };
+    });
+
     setMessages([...messages, newMessage]);
   };
 
@@ -67,7 +73,7 @@ export default function ClientTicketDetail() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-mono text-muted-foreground">
-                {ticket.ticketNumber}
+                {ticket.ticket_number}
               </span>
               <TicketStatusBadge status={ticket.status} />
               <PriorityIndicator priority={ticket.priority} />
@@ -85,7 +91,7 @@ export default function ClientTicketDetail() {
             <div>
               <p className="text-muted-foreground text-xs">Created</p>
               <p className="font-medium">
-                {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                {format(new Date(ticket.created_at), 'MMM d, yyyy')}
               </p>
             </div>
           </div>
@@ -94,7 +100,7 @@ export default function ClientTicketDetail() {
             <div>
               <p className="text-muted-foreground text-xs">Last Updated</p>
               <p className="font-medium">
-                {format(new Date(ticket.updatedAt), 'MMM d, h:mm a')}
+                {format(new Date(ticket.updated_at || ticket.created_at), 'MMM d, h:mm a')}
               </p>
             </div>
           </div>
@@ -102,7 +108,7 @@ export default function ClientTicketDetail() {
             <User className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-muted-foreground text-xs">Assigned To</p>
-              <p className="font-medium">{ticket.assignedAdminName || 'Unassigned'}</p>
+              <p className="font-medium">{ticket.assigned_admin_name || 'Unassigned'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">

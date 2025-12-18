@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { categories } from '@/data/mockData';
+import { categories } from '@/data/tickets.mock';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreateTicketModalProps {
@@ -36,7 +36,7 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!subject.trim() || !category || !description.trim()) {
       toast({
         title: 'Missing fields',
@@ -47,17 +47,17 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
     }
 
     setIsSubmitting(true);
-    
+
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    
+
     onSubmit({ subject, category, priority, description });
-    
+
     toast({
       title: 'Ticket created',
       description: 'Your support ticket has been submitted successfully.',
     });
-    
+
     // Reset form
     setSubject('');
     setCategory('');
@@ -74,7 +74,7 @@ export function CreateTicketModal({ isOpen, onClose, onSubmit }: CreateTicketMod
         className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-lg bg-card rounded-xl shadow-xl border animate-slide-up mx-4">
         {/* Header */}

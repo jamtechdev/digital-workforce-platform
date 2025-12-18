@@ -12,19 +12,21 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/tickets/StatCard';
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge';
 import { PriorityIndicator } from '@/components/tickets/PriorityIndicator';
-import { mockTickets, mockStats } from '@/data/mockData';
+import { listTickets, getStats } from '@/services/support.service';
 import { format } from 'date-fns';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const tickets = listTickets();
+  const stats = getStats();
 
   // Get recent tickets (open or urgent)
-  const urgentTickets = mockTickets
-    .filter((t) => t.priority === 'urgent' || t.slaBreached)
+  const urgentTickets = tickets
+    .filter((t) => t.priority === 'urgent' || t.sla_breach)
     .slice(0, 5);
 
-  const recentTickets = mockTickets
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  const recentTickets = [...tickets]
+    .sort((a, b) => (b.updated_at || b.created_at) - (a.updated_at || a.created_at))
     .slice(0, 5);
 
   return (
@@ -44,25 +46,25 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           title="Open Tickets"
-          value={mockStats.openTickets}
+          value={stats.open_tickets}
           icon={Ticket}
           trend={{ value: 12, isPositive: false }}
         />
         <StatCard
           title="Urgent Tickets"
-          value={mockStats.urgentTickets}
+          value={stats.urgent_tickets}
           icon={AlertTriangle}
           variant="danger"
         />
         <StatCard
           title="Waiting Response"
-          value={mockStats.waitingResponse}
+          value={stats.waiting_response}
           icon={Clock}
           variant="warning"
         />
         <StatCard
           title="Avg First Response"
-          value={mockStats.avgFirstResponseTime}
+          value={stats.avg_first_response_time}
           icon={TrendingUp}
           variant="success"
         />
@@ -91,17 +93,17 @@ export default function AdminDashboard() {
               urgentTickets.map((ticket) => (
                 <button
                   key={ticket.id}
-                  onClick={() => navigate(`/admin/support/tickets/${ticket.id}`)}
+                  onClick={() => navigate(`/admin/support/tickets/${ticket.eid}`)}
                   className="w-full p-4 text-left hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-mono text-muted-foreground">
-                          {ticket.ticketNumber}
+                          {ticket.ticket_number}
                         </span>
                         <PriorityIndicator priority={ticket.priority} />
-                        {ticket.slaBreached && (
+                        {ticket.sla_breach && (
                           <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-medium">
                             SLA Breached
                           </span>
@@ -109,7 +111,7 @@ export default function AdminDashboard() {
                       </div>
                       <p className="font-medium text-sm truncate">{ticket.subject}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {ticket.companyName}
+                        {ticket.company_name}
                       </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -132,20 +134,20 @@ export default function AdminDashboard() {
             {recentTickets.map((ticket) => (
               <button
                 key={ticket.id}
-                onClick={() => navigate(`/admin/support/tickets/${ticket.id}`)}
+                onClick={() => navigate(`/admin/support/tickets/${ticket.eid}`)}
                 className="w-full p-4 text-left hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-mono text-muted-foreground">
-                        {ticket.ticketNumber}
+                        {ticket.ticket_number}
                       </span>
                       <TicketStatusBadge status={ticket.status} />
                     </div>
                     <p className="font-medium text-sm truncate">{ticket.subject}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Updated {format(new Date(ticket.updatedAt), 'MMM d, h:mm a')}
+                      Updated {format(new Date(ticket.updated_at || ticket.created_at), 'MMM d, h:mm a')}
                     </p>
                   </div>
                   <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />

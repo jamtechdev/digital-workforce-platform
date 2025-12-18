@@ -16,9 +16,9 @@ export function TicketTable({ tickets, isAdmin = false }: TicketTableProps) {
 
   const handleRowClick = (ticket: Ticket) => {
     if (isAdmin) {
-      navigate(`/admin/support/tickets/${ticket.id}`);
+      navigate(`/admin/support/tickets/${ticket.eid}`);
     } else {
-      navigate(`/support/tickets/${ticket.id}`);
+      navigate(`/support/tickets/${ticket.eid}`);
     }
   };
 
@@ -72,20 +72,20 @@ export function TicketTable({ tickets, isAdmin = false }: TicketTableProps) {
               onClick={() => handleRowClick(ticket)}
               className={cn(
                 'border-b border-border cursor-pointer transition-colors hover:bg-muted/50',
-                ticket.unreadCount > 0 && 'bg-primary/5'
+                ticket.unread_messages_count > 0 && 'bg-primary/5'
               )}
             >
               <td className="py-4 px-4">
                 <div className="flex items-start gap-3">
-                  {ticket.unreadCount > 0 && (
+                  {ticket.unread_messages_count > 0 && (
                     <span className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                   )}
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono text-muted-foreground">
-                        {ticket.ticketNumber}
+                        {ticket.ticket_number}
                       </span>
-                      {ticket.slaBreached && (
+                      {ticket.sla_breach && (
                         <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                       )}
                     </div>
@@ -97,7 +97,7 @@ export function TicketTable({ tickets, isAdmin = false }: TicketTableProps) {
               </td>
               {isAdmin && (
                 <td className="py-4 px-4">
-                  <span className="text-sm">{ticket.companyName}</span>
+                  <span className="text-sm">{ticket.company_name}</span>
                 </td>
               )}
               <td className="py-4 px-4">
@@ -109,13 +109,13 @@ export function TicketTable({ tickets, isAdmin = false }: TicketTableProps) {
               {isAdmin && (
                 <td className="py-4 px-4">
                   <span className="text-sm text-muted-foreground">
-                    {ticket.assignedAdminName || '—'}
+                    {ticket.assigned_admin_name || '—'}
                   </span>
                 </td>
               )}
               <td className="py-4 px-4">
                 <span className="text-sm text-muted-foreground">
-                  {format(new Date(ticket.updatedAt), 'MMM d, h:mm a')}
+                  {format(new Date(ticket.updated_at || ticket.created_at), 'MMM d, h:mm a')}
                 </span>
               </td>
             </tr>

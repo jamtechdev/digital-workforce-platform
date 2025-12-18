@@ -4,40 +4,40 @@ export type TicketCategory = 'technical' | 'billing' | 'general' | 'feature_requ
 export type MessageSender = 'client' | 'admin' | 'ai' | 'system';
 
 export interface Ticket {
-  id: string;
-  ticketNumber: string;
+  id: number;
+  eid: string;
+  created_at: number;
+  updated_at?: number;
+  ticket_number: string;
   subject: string;
-  description: string;
-  status: TicketStatus;
-  priority: TicketPriority;
+  description?: string; // Optional if not in core list but needed for UI
   category: TicketCategory;
-  companyId: string;
-  companyName: string;
-  clientId: string;
-  clientName: string;
-  clientEmail: string;
-  assignedAdminId?: string;
-  assignedAdminName?: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  company_id: number;
+  user_id: number;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  firstResponseAt?: string;
-  resolvedAt?: string;
-  slaBreached: boolean;
-  unreadCount: number;
+  unread_messages_count: number;
+  sla_breach: boolean;
+  assigned_admin_id: number | null;
+  assigned_admin_name?: string;
+  // UI helper fields (may be joined in real API)
+  company_name?: string;
+  user_name?: string;
+  user_email?: string;
 }
 
 export interface TicketMessage {
-  id: string;
-  ticketId: string;
-  content: string;
-  sender: MessageSender;
-  senderName: string;
-  senderAvatar?: string;
-  isInternal: boolean;
+  id: number;
+  created_at: number;
+  ticket_id: number;
+  sender_type: MessageSender;
+  sender_id: number;
+  sender_name?: string; // UI helper
+  sender_avatar?: string; // UI helper
+  message_text: string;
+  is_internal: boolean;
   attachments: Attachment[];
-  createdAt: string;
-  aiGenerated?: boolean;
 }
 
 export interface Attachment {
@@ -49,18 +49,24 @@ export interface Attachment {
 }
 
 export interface TicketStats {
-  openTickets: number;
-  urgentTickets: number;
-  waitingResponse: number;
-  avgFirstResponseTime: string;
-  resolvedToday: number;
-  slaBreached: number;
+  open_tickets: number;
+  urgent_tickets: number;
+  waiting_response: number;
+  avg_first_response_time: string;
+  resolved_today: number;
+  sla_breached_count: number;
 }
 
-export interface Admin {
-  id: string;
+export interface User {
+  id: number;
   name: string;
   email: string;
   avatar?: string;
-  ticketCount: number;
+  role: 'client' | 'admin';
+  company_id?: number;
+}
+
+export interface Admin extends User {
+  role: 'admin';
+  ticket_count: number;
 }
